@@ -47,10 +47,23 @@ class ESGenerator:
         else:
             if "://" in host:  # we don't want the hostname to start with the protocoll
                 host = urllib.parse.urlparse(host).hostname
+
             self.es = elasticsearch_dsl.connections.create_connection(
-                               host=host, port=port, timeout=timeout,
-                               max_retries=10, retry_on_timeout=True,
-                               http_compress=True)
+                host=host,
+                port=port,
+                timeout=timeout,
+                max_retries=10,
+                retry_on_timeout=True,
+                http_compress=True,
+                # sniff before doing anything
+                sniff_on_start=True,
+                # refresh nodes after a node fails to respond
+                sniff_on_connection_fail=True,
+                # and also every 60 seconds
+                sniffer_timeout=60,
+                # set sniffing request timeout to 10 seconds
+                sniff_timeout=10)
+
         self.id_ = id_
         self.source = source
         self.chunksize = chunksize
@@ -142,7 +155,7 @@ class IDFile(ESGenerator):
     wrapper for esgenerator() to submit a list of ids or a file with ids
     to reduce the searchwindow on
     """
-    
+
     def __init__(self,  idfile, missing_behaviour='print', **kwargs):
         """
         Creates a new IDFile Object
